@@ -1,0 +1,4 @@
+interface:
+  display_name: "SoMark 小红书生图提示词"
+  short_description: "生成统一黑橙品牌风格的 SoMark 小红书构图与生图提示词"
+  default_prompt: "使用 $somark-xiaohongshu-image-prompts 为这组 SoMark 小红书内容设计构图思路和生图提示词。"
