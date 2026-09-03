@@ -1,0 +1,4 @@
+interface:
+  display_name: "OXR 公司分类与找人"
+  short_description: "从公司名单完成精细分类、排竞及双角色联系人核验"
+  default_prompt: "请使用 $oxr-company-contact-research，从公司名单开始完成主体核验、精细分类、目标团队推导，并给出技术使用者和技术决策者候选及证据。"
