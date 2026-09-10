@@ -2,6 +2,21 @@
 
 不要用一个超长 Prompt 同时完成公司判断、排竞、分类、找人和邮箱核验。分阶段 Prompt 更容易审计，也能把失败定位到主体、证据、分类、人员或邮箱。
 
+## Prompt 0：零上下文路由
+
+```text
+你要为 SoMark/OXR 找到每家公司的最佳 technical_user 和 technical_decision_maker。除非用户另有说明，使用 references/default-brief.md 的产品、竞品、persona、来源和输出默认值。
+
+先识别输入：
+A. 公司名/官网/LinkedIn Company URL -> 从 Prompt 1 开始。
+B. 已完成资格、排竞与目标团队分类的 Company List -> 从 Prompt 4 开始，缺失门槛只补缺项。
+C. Apollo/CSV 候选名单 -> 从 Prompt 5 开始。
+D. 公司与候选都有 -> 用公司边界直接核验候选，不重复搜索。
+
+若完全没有任何公司、链接、Company List 或候选，只问：请提供公司名称/链接或候选名单。
+不要再询问 ICP、persona、评分、输出格式或邮箱要求。默认每家公司每个 persona 只返回 1 名最佳人选；证据不足则返回无法判断。
+```
+
 ## Prompt 1：公司主体与快速资格判断
 
 ```text
@@ -126,8 +141,9 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 2. 根据 target_team 生成团队/功能词。
 3. 根据 primary_task 分别生成 technical_user 与 technical_decision_maker 的职位族。
 4. workflow_position=embedded_feature 时必须加入具体产品线；internal_infrastructure 时不得默认集团 CTO。
-5. 第一轮不要添加 Management Level；只有结果超过 20 人时再提供收窄方案。
+5. 已有 Company List 时，首轮只添加 Company List/Current Company 与 Job Titles；Departments、Management Level、Location、Email Status 留空。只有结果超过 20 人时再提供收窄方案。
 6. 每类最多建议 10 人进入人工查看、3 人进入核验。
+7. 不用浏览器自动翻页或抓取 Apollo；优先用户手动导出候选，或使用已授权的 Apollo 官方连接/API。
 
 只输出 JSON：
 {
@@ -170,8 +186,9 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 
 通过硬门槛后按 100 分排序：target_team 30，primary_task 25，workflow_position 20，persona 15，当前证据新鲜度 5，证据质量 5。
 
-输出 selected、pending_A、pending_B 或 rejected；不要为了两类人都填满而提高低质量候选状态。
-只输出符合 references/output-schema.md 的 contacts JSON。
+输出 selected、pending_A、pending_B 或 rejected；不要为了两类人都填满而提高低质量候选状态。每个 persona 只标一名 `best_candidate=true`；若最高候选仍未通过硬门槛，则没有最佳人选。
+
+默认只输出 references/output-schema.md 的最小候选表；用户要求系统对接、审计或 JSON 时才输出完整 contacts JSON。
 ```
 
 ## Prompt 6：Apollo 无邮箱处理
@@ -209,4 +226,5 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 3. departed/company_mismatch/competitor_scope 淘汰项；
 4. 每家缺失字段、证据或下一步；
 5. 唯一公司数、qualified 数、people_search_ready 数、双角色完成数、selected 人数、离职淘汰数和各阶段 pending 数。
+6. 每个 persona 是否只有一名最佳人选；是否存在职责更弱但因职级或邮箱被错误排在前面的候选。
 ```
