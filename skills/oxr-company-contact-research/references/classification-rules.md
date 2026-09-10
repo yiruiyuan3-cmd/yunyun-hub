@@ -131,3 +131,18 @@ people_search_ready =
   AND evidence_level in [A, B]
   AND (competitor_rule != product_team_only OR entity_scope is explicit)
 ```
+
+## 从分类到最佳人选
+
+分类字段只负责确定搜索边界，不能直接证明某个人合适。对同一 persona 的候选先应用以下硬门槛：
+
+- 当前公司与目标实体一致，且仍在职；
+- 位于允许触达的团队/产品线，不命中竞品限制；
+- 至少一条当前团队或职责证据；
+- 职责能解释为对应 persona，而非只有相似 title。
+
+通过后按 `职责直接性 → 团队/产品线精确度 → persona 权限 → 当前证据质量 → 职级` 排序。邮箱仅决定触达准备度，不参与角色优先级。
+
+公司已进入按目标团队整理的 Company List 时，不重复使用公司行业、规模等字段过度筛选人员。首轮只用 Company List/Current Company 与宽 Job Titles；候选结果再逐人核验实际职责。
+
+有具体需求证据但不属于正式分组的公司，不标 `pending`。按相近任务和职位族建立“其他已确认需求”临时批次；只有同类需求反复出现时才升级为正式分组。

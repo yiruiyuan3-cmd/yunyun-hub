@@ -1,5 +1,26 @@
 # 输出、状态与评分
 
+## 默认最小输出
+
+零上下文或用户只问“谁最合适”时，不先展示完整状态表。每家公司、每个 persona 最多一名最佳人选：
+
+| 公司 | 最佳人选 | Persona | 当前职位 | 结论 | 为什么匹配 | 当前证据 | 缺口/下一步 |
+|---|---|---|---|---|---|---|---|
+
+`结论` 只使用：
+
+- `符合`：通过当前公司、团队/产品线、职责和 persona 硬门槛。
+- `不符合`：明确离职、实体/团队/职责不符或命中竞品限制。
+- `无法判断`：来源打不开、只有旧资料或缺少当前团队/职责证据。
+
+若输入是 Apollo/CSV 候选并需要回传文件，最小列为：
+
+```text
+company_name,candidate_name,persona,current_title,apollo_url,linkedin_url,match_result,reason,evidence_url
+```
+
+详细 JSON 和评分用于系统对接、审计或用户明确要求时。
+
 ## 公司记录
 
 ```json
@@ -54,6 +75,7 @@
   },
   "verification_level": "V1",
   "person_status": "selected",
+  "best_candidate": true,
   "email_address": "",
   "email_status": "not_found",
   "outreach_channel": "linkedin",
@@ -91,6 +113,8 @@
 - `60–79`：`pending_A`，补一次团队或职责核验
 - `40–59`：`pending_B`
 - `<40`：`rejected`
+
+分数只在硬门槛通过后用于同一 persona 内排序。`best_candidate=true` 只能给得分最高且职责证据最直接的一人；邮箱状态不计入分数。备选默认最多一名，并标 `best_candidate=false`。
 
 ## verification_level
 
