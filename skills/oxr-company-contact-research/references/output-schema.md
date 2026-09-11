@@ -21,6 +21,32 @@ company_name,candidate_name,persona,current_title,apollo_url,linkedin_url,match_
 
 详细 JSON 和评分用于系统对接、审计或用户明确要求时。
 
+没有找到某个 persona 时，仍在最小表中保留该公司和 persona，`最佳人选` 留空；`缺口/下一步` 必须写明已尝试的搜索轮次、失败原因和下一步，不能只写 `无法判断`。
+
+## 找人覆盖与补搜状态
+
+以下字段默认内部保留；仅在用户要求审计、补搜明细或系统对接时展开：
+
+```json
+{
+  "company_domain": "example.com",
+  "search_round": 3,
+  "coverage_status": "complete|partial_buying_group|no_verified_contact",
+  "missing_persona": ["technical_user"],
+  "failure_reason": "no_candidates|no_role_fit|only_one_persona|current_role_unverified",
+  "search_changes": [
+    "第二轮增加相邻职位并移除非必要筛选",
+    "第三轮从已确认决策者向下反查同团队工程师"
+  ],
+  "next_action": "核验目标团队当前工程人员"
+}
+```
+
+- `complete`：两个 persona 均有通过硬门槛的最佳人选。
+- `partial_buying_group`：只有一个 persona 通过硬门槛。
+- `no_verified_contact`：三轮后仍没有人通过当前任职、团队、职责和 persona 硬门槛。
+- `email_not_found` 只写入 `email_status`，不得作为 `failure_reason`。
+
 ## 公司记录
 
 ```json
@@ -130,16 +156,19 @@ company_name,candidate_name,persona,current_title,apollo_url,linkedin_url,match_
 至少输出：
 
 ```text
+input_company_count
 company_count_unique_domain
-company_qualified_count
-company_people_search_ready_count
 company_dual_persona_complete_count
 company_partial_buying_group_count
 person_selected_count
 person_departed_rejected_count
 pending_by_stage
 duplicate_domain_count
+search_round_counts
+failure_reason_counts
 ```
+
+只有原始名单模式额外输出 `company_qualified_count` 和 `company_people_search_ready_count`。已确认可找人的名单不要求这两个公司门槛统计。
 
 只有两类 persona 都有当前任职和职责证据时，才计入 `company_dual_persona_complete_count`。`pending`、`routing_contact` 和离职人员均不计入。
 
@@ -148,4 +177,4 @@ duplicate_domain_count
 | 公司 | Domain | 场景 | Primary task | Workflow position | Target team | 技术使用者 | 技术决策者 | 当前核验 | 邮箱状态 | 证据 | 下一步 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 
-不要把 `pending` 候选伪装成最终名单。联系人缺失时保留空值并写明缺失阶段和下一步。
+不要把 `pending` 候选伪装成最终名单。联系人缺失时保留空值，写明搜索轮次、失败原因、已尝试改动和下一步。

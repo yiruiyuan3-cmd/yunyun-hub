@@ -8,8 +8,8 @@
 你要为 SoMark/OXR 找到每家公司的最佳 technical_user 和 technical_decision_maker。除非用户另有说明，使用 references/default-brief.md 的产品、竞品、persona、来源和输出默认值。
 
 先识别输入：
-A. 公司名/官网/LinkedIn Company URL -> 从 Prompt 1 开始。
-B. 已完成资格、排竞与目标团队分类的 Company List -> 从 Prompt 4 开始，缺失门槛只补缺项。
+A. 公司名/官网/LinkedIn Company URL/Company List -> 默认已经通过公司筛选，从 Prompt 4 开始；只核对公司主体并补足找人所需的团队假设，不重新判断资格和排竞。
+B. 用户明确说是原始/未筛选名单，或要求判断公司、分类、排竞 -> 从 Prompt 1 开始。
 C. Apollo/CSV 候选名单 -> 从 Prompt 5 开始。
 D. 公司与候选都有 -> 用公司边界直接核验候选，不重复搜索。
 
@@ -136,6 +136,8 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 输入：
 {{classified_company_record}}
 
+若输入只有公司名称或链接且用户未要求公司筛选，将其视为已确认可以找人。先确认正确公司主体，再根据当前产品、项目、招聘或团队信息生成最合理的 target_team、primary_task 和职位假设；这些是假设，不是重新设置公司准入门槛。
+
 要求：
 1. 固定 Current Company，关闭 Past Job Titles。
 2. 根据 target_team 生成团队/功能词。
@@ -165,6 +167,37 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
   },
   "narrowing_if_too_many": [],
   "selection_explanation": ""
+}
+```
+
+## Prompt 4B：首轮缺口补搜
+
+```text
+你是一名 B2B 技术联系人研究员。首轮没有找到合格人选或只找到一个 persona。不要重新审核公司，也不要直接结束为“无法判断”。
+
+输入：
+{{company_and_search_scope}}
+{{first_round_filters_and_results}}
+{{verified_or_rejected_candidates}}
+
+执行：
+1. 判断失败类型：no_candidates、no_role_fit、only_one_persona 或 current_role_unverified。
+2. 第二轮职位扩展：移除非必要的 Email Status、Department、Location、Management Level；每个缺失 persona 增加 2–5 个相邻职位。技术使用者可开启相似职位，决策者组合功能词与管理职位词。
+3. 第二轮仍失败时做第三轮组织关系反查：从已确认技术使用者向上找负责人，或从已确认决策者向下找同团队工程师；同时查看官网团队页、工程博客、当前招聘、会议演讲和项目作者。
+4. 所有新候选都必须回到 Current Company、Current Job Title、团队和职责核验。routing_contact 不能替代 technical_user 或 technical_decision_maker。
+5. 最多三轮，每个 persona 整体最多核验 10 人。仍未通过硬门槛时，保留空值并输出 partial_buying_group 或 no_verified_contact。
+6. email_not_found 不属于本 Prompt；人选正确但无邮箱时转 Prompt 6。
+
+只输出 JSON：
+{
+  "company": "",
+  "missing_persona": [],
+  "failure_reason": "no_candidates|no_role_fit|only_one_persona|current_role_unverified",
+  "search_round": 2,
+  "search_changes": [],
+  "new_candidates": [],
+  "coverage_status": "complete|partial_buying_group|no_verified_contact",
+  "next_action": ""
 }
 ```
 
@@ -214,7 +247,7 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 ## Prompt 7：批次终检
 
 ```text
-审计以下公司与联系人批次。逐项检查根域名唯一、公司证据具体、分类枚举合法、排竞完成、people_search_ready 门槛正确、双 persona 完整、当前任职已核验、离职人员清零、邮箱与人选状态分离。
+审计以下公司与联系人批次。先识别输入是“已确认可找人名单”还是“原始名单”。两种模式都检查根域名唯一、双 persona 覆盖、补搜轮次、当前任职、离职人员和邮箱状态分离；只有原始名单模式才检查公司证据、分类、排竞和 people_search_ready 门槛。不得因已确认名单缺少公司门槛字段而判失败。
 
 输入：
 {{company_records}}
@@ -225,6 +258,7 @@ company_size = 0-20 | 20-99 | 100-499 | 500-1000 | 1000+
 2. partial_buying_group；
 3. departed/company_mismatch/competitor_scope 淘汰项；
 4. 每家缺失字段、证据或下一步；
-5. 唯一公司数、qualified 数、people_search_ready 数、双角色完成数、selected 人数、离职淘汰数和各阶段 pending 数。
+5. 输入公司数、唯一公司数、双角色完成数、selected 人数、离职淘汰数和各阶段 pending 数；qualified 与 people_search_ready 数只在原始名单模式输出。
 6. 每个 persona 是否只有一名最佳人选；是否存在职责更弱但因职级或邮箱被错误排在前面的候选。
+7. 缺失 persona 的公司是否执行了最多三轮补搜，并记录 failure_reason、search_changes、coverage_status 和 next_action。
 ```
